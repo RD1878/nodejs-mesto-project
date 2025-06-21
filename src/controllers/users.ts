@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
 import User from '../models/user';
+import StatusCode from '../constants/errors';
 import { BadRequestError, NotFoundError } from '../errors';
 
 export const getUsers = (req: Request, res: Response, next: NextFunction) => User.find({})
@@ -10,7 +11,7 @@ export const createUser = (req: Request, res: Response, next: NextFunction) => {
   const { name, about, avatar } = req.body;
 
   User.create({ name, about, avatar })
-    .then((user) => res.send({ data: user }))
+    .then((user) => res.status(StatusCode.CREATED).send({ data: user }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
@@ -34,7 +35,6 @@ export const getUser = (req: Request, res: Response, next: NextFunction) => User
 export const updateUserInfo = (req: Request, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
 
-  // @ts-ignore
   const userId = req.user._id;
 
   User.findByIdAndUpdate(
@@ -61,7 +61,6 @@ export const updateUserInfo = (req: Request, res: Response, next: NextFunction) 
 export const updateUserAvatar = (req: Request, res: Response, next: NextFunction) => {
   const { avatar } = req.body;
 
-  // @ts-ignore
   const userId = req.user._id;
 
   User.findByIdAndUpdate(

@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
-import ErrorStatusCode from './constants/errors';
+import StatusCode from './constants/errors';
 import usersRouter from './routes/users';
 import cardsRouter from './routes/cards';
 
@@ -20,7 +20,6 @@ mongoose.connect('mongodb://localhost:27017/mestodb')
   });
 
 app.use((req: Request, _res: Response, next: NextFunction) => {
-  // @ts-ignore
   req.user = {
     _id: TEST_USER_ID,
   };
@@ -31,13 +30,17 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
+app.use((req, res) => {
+  res.status(StatusCode.NOT_FOUND).send({ message: 'Запрашиваемый ресурс не найден' });
+});
+
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  const { statusCode = ErrorStatusCode.INTERNAL_SERVER_ERROR, message } = err;
+  const { statusCode = StatusCode.INTERNAL_SERVER_ERROR, message } = err;
 
   res
     .status(statusCode)
     .send({
-      message: statusCode === ErrorStatusCode.INTERNAL_SERVER_ERROR
+      message: statusCode === StatusCode.INTERNAL_SERVER_ERROR
         ? 'На сервере произошла ошибка'
         : message,
     });

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
-import { BadRequestError, NotFoundError } from '../errors';
+import StatusCode from '../constants/errors';
 import Card from '../models/card';
+import { BadRequestError, NotFoundError } from '../errors';
 
 export const getCards = (req: Request, res: Response, next: NextFunction) => Card.find({})
   .then((cards) => res.send({ data: cards }))
@@ -15,10 +16,9 @@ export const createCard = (req: Request, res: Response, next: NextFunction) => {
   Card.create({
     name,
     link,
-    // @ts-ignore
     owner: req.user._id,
   })
-    .then((card) => res.send({ data: card }))
+    .then((card) => res.status(StatusCode.CREATED).send({ data: card }))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при создании карточки'));
@@ -47,7 +47,6 @@ export const deleteCard = (req: Request, res: Response, next: NextFunction) => C
 
 export const likeCard = (req: Request, res: Response, next: NextFunction) => Card.findByIdAndUpdate(
   req.params.cardId,
-  // @ts-ignore
   { $addToSet: { likes: req.user._id } },
   { new: true },
 )
@@ -69,7 +68,6 @@ export const likeCard = (req: Request, res: Response, next: NextFunction) => Car
 // eslint-disable-next-line max-len
 export const dislikeCard = (req: Request, res: Response, next: NextFunction) => Card.findByIdAndUpdate(
   req.params.cardId,
-  // @ts-ignore
   { $pull: { likes: req.user._id } },
   { new: true },
 )

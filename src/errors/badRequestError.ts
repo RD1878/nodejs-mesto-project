@@ -1,10 +1,10 @@
-import ErrorStatusCode from '../constants/errors';
+import StatusCode from '../constants/errors';
 
 export default class BadRequestError extends Error {
-  statusCode: (typeof ErrorStatusCode)[keyof typeof ErrorStatusCode];
+  statusCode: (typeof StatusCode)[keyof typeof StatusCode];
 
   constructor(message: string) {
     super(message);
-    this.statusCode = ErrorStatusCode.BAD_REQUEST;
+    this.statusCode = StatusCode.BAD_REQUEST;
   }
 }
