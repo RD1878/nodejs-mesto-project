@@ -1,87 +1,105 @@
 import { NextFunction, Request, Response } from 'express';
 import StatusCode from '../constants/errors';
 import Card from '../models/card';
-import { BadRequestError, NotFoundError } from '../errors';
+import { BadRequestError, NotFoundError, ForbiddenError } from '../errors';
 
-export const getCards = (req: Request, res: Response, next: NextFunction) => Card.find({})
-  .then((cards) => res.send({ data: cards }))
-  .catch(next);
-
-export const createCard = (req: Request, res: Response, next: NextFunction) => {
-  const {
-    name,
-    link,
-  } = req.body;
-
-  Card.create({
-    name,
-    link,
-    owner: req.user._id,
-  })
-    .then((card) => res.status(StatusCode.CREATED).send({ data: card }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadRequestError('Переданы некорректные данные при создании карточки'));
-      } else {
-        next(err);
-      }
-    });
+export const getCards = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const cards = await Card.find({});
+    res.send({ data: cards });
+  } catch (err) {
+    next(err);
+  }
 };
 
-export const deleteCard = (req: Request, res: Response, next: NextFunction) => Card
-  .deleteOne({ _id: req.params.cardId })
-  .then((card) => {
+export const createCard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const {
+      name,
+      link,
+    } = req.body;
+
+    const card = await Card.create({
+      name,
+      link,
+      owner: req.user._id,
+    });
+    res.status(StatusCode.CREATED).send({ data: card });
+  } catch (err: any) {
+    if (err.name === 'ValidationError') {
+      next(new BadRequestError('Переданы некорректные данные при создании карточки'));
+    } else {
+      next(err);
+    }
+  }
+};
+
+export const deleteCard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { cardId } = req.params;
+    const card = await Card.findById(cardId);
+
     if (!card) {
-      throw new NotFoundError('Карточка с указанным _id не найдена');
+      return next(new NotFoundError('Карточка с указанным _id не найдена'));
     }
 
-    res.send({ data: 'success' });
-  })
-  .catch((err) => {
+    if (String(card.owner) !== req.user._id) {
+      return next(new ForbiddenError('Удаление запрещено'));
+    }
+
+    await Card
+      .deleteOne({ _id: cardId });
+
+    return res.send({ data: 'success' });
+  } catch (err: any) {
     if (err.name === 'CastError') {
-      next(new BadRequestError('Карточка с указанным _id не найдена'));
-    } else {
-      next(err);
+      return next(new BadRequestError('Карточка с указанным _id не найдена'));
     }
-  });
 
-export const likeCard = (req: Request, res: Response, next: NextFunction) => Card.findByIdAndUpdate(
-  req.params.cardId,
-  { $addToSet: { likes: req.user._id } },
-  { new: true },
-)
-  .then((card) => {
+    return next(err);
+  }
+};
+
+export const likeCard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const card = await Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $addToSet: { likes: req.user._id } },
+      { new: true },
+    );
+
     if (!card) {
-      throw new NotFoundError('Передан несуществующий _id карточки');
+      return next(new NotFoundError('Передан несуществующий _id карточки'));
     }
 
-    res.send({ data: card });
-  })
-  .catch((err) => {
+    return res.send({ data: card });
+  } catch (err: any) {
     if (err.name === 'ValidationError') {
-      next(new BadRequestError('Переданы некорректные данные для постановки лайка'));
-    } else {
-      next(err);
+      return next(new BadRequestError('Переданы некорректные данные для постановки лайка'));
     }
-  });
 
-// eslint-disable-next-line max-len
-export const dislikeCard = (req: Request, res: Response, next: NextFunction) => Card.findByIdAndUpdate(
-  req.params.cardId,
-  { $pull: { likes: req.user._id } },
-  { new: true },
-)
-  .then((card) => {
+    return next(err);
+  }
+};
+
+export const dislikeCard = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const card = await Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $pull: { likes: req.user._id } },
+      { new: true },
+    );
+
     if (!card) {
-      throw new NotFoundError('Передан несуществующий _id карточки');
+      return next(new NotFoundError('Передан несуществующий _id карточки'));
     }
 
-    res.send({ data: card });
-  })
-  .catch((err) => {
+    return res.send({ data: card });
+  } catch (err: any) {
     if (err.name === 'ValidationError') {
-      next(new BadRequestError('Переданы некорректные данные для снятии лайка'));
-    } else {
-      next(err);
+      return next(new BadRequestError('Переданы некорректные данные для снятии лайка'));
     }
-  });
+
+    return next(err);
+  }
+};
