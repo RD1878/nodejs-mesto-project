@@ -29,7 +29,9 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
       name, about, avatar, email, password: passwordHash,
     });
 
-    return res.status(StatusCode.CREATED).send({ data: user });
+    const { password: excludedPassword, ...userWithoutPassword } = user.toObject();
+
+    return res.status(StatusCode.CREATED).send({ data: userWithoutPassword });
   } catch (err: any) {
     if (err.name === 'ValidationError') {
       return next(new BadRequestError('Переданы некорректные данные при создании пользователя'));

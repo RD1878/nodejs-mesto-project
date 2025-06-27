@@ -5,11 +5,11 @@ import { errors } from 'celebrate';
 import errorHandler from './middlewares/errorHandler';
 import auth from './middlewares/auth';
 import { requestLogger, errorLogger } from './middlewares/logger';
-import StatusCode from './constants/errors';
 import usersRouter from './routes/users';
 import signinRouter from './routes/signin';
 import signupRouter from './routes/signup';
 import cardsRouter from './routes/cards';
+import { NotFoundError } from './errors';
 
 const { PORT = 3000 } = process.env;
 
@@ -33,12 +33,12 @@ app.use('/signup', signupRouter);
 app.use(auth);
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
-
-app.use(errors());
-app.use(errorLogger);
-app.use((req, res) => {
-  res.status(StatusCode.NOT_FOUND).send({ message: 'Запрашиваемый ресурс не найден' });
+app.use('*', (req, res, next) => {
+  next(new NotFoundError('Запрашиваемый ресурс не найден'));
 });
+
+app.use(errorLogger);
+app.use(errors());
 app.use(errorHandler);
 
 app.listen(PORT, () => {
